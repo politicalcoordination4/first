@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบแสดงกระทู้ถามในที่ประชุมสภา</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Noto+Serif+Thai:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:#f0ede8;color:#111;min-height:100vh}
+
+/* HEADER */
+.hdr{background:#1a3a5c;color:#fff;padding:13px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.hdr h1{font-family:'Noto Serif Thai',serif;font-size:18px;font-weight:700}
+.hdr p{font-size:12px;opacity:.7;margin-top:2px}
+
+/* TOP BAR */
+.topbar{background:#fff;border-bottom:3px solid #c9a227;padding:10px 24px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;font-weight:700;color:#1a3a5c;text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select{font-family:'Sarabun',sans-serif;font-size:14px;padding:7px 10px;border:1.5px solid #d4cfc7;border-radius:6px;background:#fafafa;color:#111;outline:none}
+.fg input:focus,.fg select:focus{border-color:#1a3a5c;background:#fff}
+
+/* Today badge */
+.today-badge{background:#f0f4f8;border:1.5px solid #b0bec5;border-radius:6px;padding:7px 14px;font-size:14px;font-weight:700;color:#37474f;white-space:nowrap;display:flex;align-items:center;gap:6px}
+
+.btn{font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:background .15s}
+.btn-blue{background:#1a3a5c;color:#fff}.btn-blue:hover{background:#0f2640}
+.btn-gray{background:#eee;color:#1a3a5c;border:1.5px solid #d4cfc7}.btn-gray:hover{background:#ddd}
+.btn-gold{background:#c9a227;color:#fff;margin-left:auto}.btn-gold:hover{background:#a8841a}
+.btn-green{background:#2e7d32;color:#fff}.btn-green:hover{background:#1b5e20}
+
+/* STATUS */
+.status{margin:10px 24px 0;padding:9px 14px;border-radius:6px;font-size:13px;display:none;align-items:center;gap:8px;line-height:1.6}
+.s-load{background:#e3f2fd;color:#0d47a1;border:1px solid #90caf9}
+.s-ok{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7}
+.s-err{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a}
+.spin{width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* SETUP */
+.setup{margin:12px 24px 0;background:#fff;border:1.5px solid #ddd;border-radius:8px;overflow:hidden;display:none}
+.setup-hdr{background:#f2f5f8;padding:11px 16px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #ddd;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;user-select:none}
+.setup-body{padding:16px}
+.note{background:#fffbe8;border:1px solid #f0d050;border-radius:6px;padding:12px 14px;font-size:13px;color:#6a5000;line-height:1.9;margin-bottom:14px}
+.note code{background:#fff3b0;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px}
+.paste-box{background:#f0fff4;border:1.5px solid #81c784;border-radius:6px;padding:14px;margin-bottom:14px}
+.paste-box p{font-size:13px;color:#1b5e20;margin-bottom:8px;line-height:1.8}
+.paste-box textarea{width:100%;font-family:monospace;font-size:12px;padding:9px;border:1.5px solid #a5d6a7;border-radius:5px;resize:vertical;outline:none;background:#fff}
+.col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:9px;margin-top:12px}
+.ci{display:flex;flex-direction:column;gap:3px}
+.ci label{font-size:11px;font-weight:700;color:#888}
+.ci input{font-family:'Sarabun',sans-serif;font-size:13px;padding:6px 9px;border:1px solid #d4cfc7;border-radius:4px;outline:none}
+.col-tip{font-size:12px;color:#999;margin-top:7px}
+.url-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
+
+/* MAIN */
+.main{padding:18px 24px 48px}
+
+/* DOC */
+.doc{background:#fff;border:1px solid #ccc;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:860px;margin:0 auto 28px}
+.doc-head{text-align:center;padding:22px 36px 14px;border-bottom:2px solid #222}
+.doc-head h2{font-family:'Noto Serif Thai',serif;font-size:20px;font-weight:700;display:inline}
+.doc-date{display:inline-block;background:#FFD700;padding:1px 14px;border-radius:3px;font-size:20px;font-weight:700;margin-left:8px;font-family:'Noto Serif Thai',serif}
+.doc-session{font-size:13px;color:#555;margin-top:5px;font-style:italic}
+.doc-body{padding:20px 36px 26px}
+.sec-label{font-size:16px;font-weight:600;font-style:italic;text-decoration:underline;margin-bottom:16px}
+.item{margin-bottom:20px;padding-bottom:16px;border-bottom:1px dashed #ccc}
+.item:last-child{border-bottom:none;margin-bottom:0}
+.line{font-size:15.5px;line-height:2}
+.num{font-weight:700}
+.badge{display:inline-block;padding:1px 10px;border-radius:3px;font-weight:700;font-size:15px}
+.hl-y{background:#FFD700;color:#000}
+.hl-g{background:#22CC55;color:#fff}
+.hl-r{background:#EE3333;color:#fff}
+.doc-foot{border-top:1px solid #eee;padding:9px 36px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#666;align-items:center}
+.leg{display:flex;align-items:center;gap:5px}
+.leg-dot{width:13px;height:13px;border-radius:2px;flex-shrink:0}
+
+/* MODAL */
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;overflow:auto;padding:16px}
+.modal-box{background:#fff;border-radius:8px;max-width:960px;margin:0 auto;padding:20px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:#1a3a5c;color:#fff;padding:6px 10px;border:1px solid #ddd;text-align:left}
+.tbl td{padding:5px 9px;border:1px solid #eee;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbl tr:nth-child(even) td{background:#f8f8f8}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:#888}
+.empty .ico{font-size:52px;margin-bottom:10px}
+
+/* PRINT */
+@media print{
+  .hdr,.topbar,.setup,.status,.doc-foot,.btn-gold{display:none!important}
+  body{background:#fff}.main{padding:0}
+  .doc{box-shadow:none;border:none;max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div style="font-size:28px">⚖️</div>
+  <div>
+    <h1>ระบบแสดงกระทู้ถามในที่ประชุมสภา</h1>
+    <p>ดึงข้อมูลจาก Google Sheets · รองรับทั้ง สส. และ สว.</p>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+
+  <!-- วันที่วันนี้ — แค่แสดง ไม่ใช้กรอง -->
+  <div class="fg">
+    <label>📅 วันนี้</label>
+    <div class="today-badge" id="todayBadge">—</div>
+  </div>
+
+  <!-- เลือกวันที่จะดูข้อมูล -->
+  <div class="fg">
+    <label>🔍 เลือกวันที่ต้องการดู</label>
+    <select id="dateSel" style="min-width:180px">
+      <option value="">-- แสดงล่าสุด --</option>
+    </select>
+  </div>
+
+  <!-- ค้นหาเรื่อง/ผู้ถาม -->
+  <div class="fg">
+    <label>🔎 ค้นหาเรื่อง / ผู้ถาม / กระทรวง</label>
+    <input id="search" type="text" placeholder="พิมพ์คำค้นหา..." style="min-width:220px">
+  </div>
+
+  <button class="btn btn-blue" id="btnLoad">🔄 โหลดข้อมูล</button>
+  <button class="btn btn-gray" id="btnRaw">🔎 ดูข้อมูลดิบ</button>
+  <button class="btn btn-gray" id="btnSetup">⚙️ ตั้งค่า</button>
+  <button class="btn btn-gold" id="btnPrint">🖨️ พิมพ์ / PDF</button>
+</div>
+
+<!-- STATUS -->
+<div id="statusEl" class="status"></div>
+
+<!-- SETUP PANEL -->
+<div id="setupEl" class="setup">
+  <div class="setup-hdr" id="setupHdr">
+    ⚙️ ตั้งค่าการเชื่อมต่อ <span id="arr" style="margin-left:auto">▼</span>
+  </div>
+  <div class="setup-body">
+
+    <!-- PASTE -->
+    <div class="paste-box">
+      <p><b>✂️ วิธีง่ายที่สุด — วางข้อมูลจาก Google Sheets</b><br>
+      ① เปิด Sheet → Ctrl+A → Ctrl+C<br>
+      ② วางในช่องด้านล่าง → กด <b>ใช้ข้อมูลนี้</b></p>
+      <textarea id="csvPaste" rows="5" placeholder="วางข้อมูลที่นี่..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-green" id="btnUsePaste">✅ ใช้ข้อมูลนี้</button>
+        <button class="btn btn-gray"  id="btnClearPaste">🗑️ ล้าง</button>
+        <button class="btn btn-gray"  id="btnSample">📋 ทดสอบตัวอย่าง</button>
+      </div>
+    </div>
+
+    <!-- URL -->
+    <div class="note">
+      <b>🔗 วิธี Apps Script (เสถียรที่สุด):</b><br>
+      ① Google Sheets → ส่วนขยาย → Apps Script → วางโค้ด → บันทึก<br>
+      ② Deploy → New deployment → Web app → Anyone → Deploy → คัดลอก URL<br>
+      ③ วาง URL ด้านล่าง → กด <b>โหลดข้อมูล</b>
+    </div>
+    <div class="url-row">
+      <div class="fg" style="flex:1;min-width:280px">
+        <label>URL (Apps Script หรือ CSV Export)</label>
+        <input id="sheetUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%" value="วาง_URL_APPS_SCRIPT_ของคุณตรงนี้">
+      </div>
+      <button class="btn btn-blue" id="btnLoadUrl">เชื่อมต่อ & จำไว้</button>
+      <button class="btn btn-gray" id="btnForgetUrl" title="ลบ URL ที่บันทึกไว้">🗑️ ลืม URL</button>
+    </div>
+
+    <!-- COLUMN MAP -->
+    <div style="background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:14px">
+      <div style="font-weight:700;color:#1a3a5c;font-size:13px;margin-bottom:10px">🗂️ ลำดับคอลัมน์ใน Sheet (A=1, B=2 ...)</div>
+      <div class="col-grid">
+        <div class="ci"><label>วันที่ (0=ไม่มี)</label><input id="c_date"   type="number" min="0" value="1"></div>
+        <div class="ci"><label>คนถาม</label>            <input id="c_asker"  type="number" min="1" value="2"></div>
+        <div class="ci"><label>หัวข้อ / เรื่อง</label> <input id="c_topic"  type="number" min="1" value="3"></div>
+        <div class="ci"><label>ตำแหน่ง สว./สส.</label> <input id="c_pos"    type="number" min="1" value="4"></div>
+        <div class="ci"><label>ถาม (กระทรวง)</label>   <input id="c_ask"    type="number" min="1" value="5"></div>
+        <div class="ci"><label>บรรจุระเบียบวาระ</label><input id="c_agenda" type="number" min="1" value="6"></div>
+        <div class="ci"><label>สถานะ</label>            <input id="c_status" type="number" min="1" value="7"></div>
+        <div class="ci"><label>คำตอบ / ผู้ตอบ</label>  <input id="c_answer" type="number" min="1" value="8"></div>
+      </div>
+      <p class="col-tip">💡 <b>เลื่อน</b>=เหลือง · <b>ตอบชี้แจง/ตอบเรียบร้อย</b>=เขียว · <b>ค้าง</b>=แดง</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main" id="mainEl">
+  <div class="empty">
+    <div class="ico">📋</div>
+    <p>เปิด <b>⚙️ ตั้งค่า</b> เพื่อวางข้อมูล หรือกด <b>🔄 โหลดข้อมูล</b> ถ้าตั้ง URL ไว้แล้ว</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var allRows = [];    // raw data rows
+  var allDates = [];   // unique dates sorted newest → oldest
+
+  /* ── COLUMN VALUE ── */
+  function cv(row, id) {
+    var n = parseInt(document.getElementById(id).value, 10);
+    if (isNaN(n) || n <= 0) return '';
+    return String(row[n - 1] || '').trim();
+  }
+
+  /* ── STATUS ── */
+  function setStatus(msg, cls) {
+    var el = document.getElementById('statusEl');
+    el.className = 'status ' + cls;
+    el.innerHTML = (cls === 's-load' ? '<div class="spin"></div>' : '') + msg;
+    el.style.display = 'flex';
+  }
+
+  /* ── THAI DATE HELPERS ── */
+  var MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var MONTHS_LONG  = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  function todayThai() {
+    var d = new Date();
+    return d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+  }
+
+  /* Parse a date string from sheet into a comparable number YYYYMMDD
+     Handles: "Thu Sep 14 2569 ...", "14 ก.ย. 2569", "14/09/2569" etc. */
+  function parseDateValue(str) {
+    if (!str) return 0;
+    str = String(str);
+
+    // If it's a JS Date string like "Thu Sep 14 2569 00:00:00 GMT+0700"
+    // Extract day, month name, year
+    var jsMatch = str.match(/(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+    if (jsMatch) {
+      var engMonths = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      var mi = engMonths.indexOf(jsMatch[1].toLowerCase());
+      if (mi >= 0) {
+        var yr = parseInt(jsMatch[3], 10);
+        var mo = mi + 1;
+        var dy = parseInt(jsMatch[2], 10);
+        return yr * 10000 + mo * 100 + dy;
+      }
+    }
+
+    // Thai short month: "14 ก.ย. 2569"
+    for (var i = 0; i < MONTHS_SHORT.length; i++) {
+      if (str.indexOf(MONTHS_SHORT[i]) >= 0) {
+        var numMatch = str.match(/(\d+)/g);
+        if (numMatch && numMatch.length >= 2) {
+          return parseInt(numMatch[1], 10) * 10000 + (i + 1) * 100 + parseInt(numMatch[0], 10);
+        }
+      }
+    }
+
+    // Thai long month: "14 มีนาคม 2568"
+    for (var j = 0; j < MONTHS_LONG.length; j++) {
+      if (str.indexOf(MONTHS_LONG[j]) >= 0) {
+        var nm2 = str.match(/(\d+)/g);
+        if (nm2 && nm2.length >= 2) {
+          return parseInt(nm2[1], 10) * 10000 + (j + 1) * 100 + parseInt(nm2[0], 10);
+        }
+      }
+    }
+
+    // dd/mm/yyyy or yyyy-mm-dd
+    var parts = str.match(/(\d+)[\/\-](\d+)[\/\-](\d+)/);
+    if (parts) {
+      var a = parseInt(parts[1], 10), b = parseInt(parts[2], 10), c = parseInt(parts[3], 10);
+      if (a > 31) return a * 10000 + b * 100 + c;   // yyyy-mm-dd
+      return c * 10000 + b * 100 + a;                 // dd/mm/yyyy
+    }
+
+    return 0;
+  }
+
+  /* Format raw date cell → clean Thai display string "14 กันยายน 2569" */
+  function formatDateDisplay(raw) {
+    if (!raw) return '';
+    raw = String(raw);
+
+    // Already Thai short format "14 ก.ย. 2569" — return as-is
+    for (var i = 0; i < MONTHS_SHORT.length; i++) {
+      if (raw.indexOf(MONTHS_SHORT[i]) >= 0) return raw;
+    }
+    // Already Thai long format
+    for (var j = 0; j < MONTHS_LONG.length; j++) {
+      if (raw.indexOf(MONTHS_LONG[j]) >= 0) return raw;
+    }
+
+    // JS Date string "Thu Sep 14 2569 ..."
+    var jsMatch = raw.match(/(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+    if (jsMatch) {
+      var engMonths = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      var mi = engMonths.indexOf(jsMatch[1].toLowerCase());
+      if (mi >= 0) {
+        return parseInt(jsMatch[2], 10) + ' ' + MONTHS_LONG[mi] + ' ' + jsMatch[3];
+      }
+    }
+
+    // dd/mm/yyyy
+    var parts = raw.match(/(\d+)[\/\-](\d+)[\/\-](\d+)/);
+    if (parts) {
+      var a = parseInt(parts[1], 10), b = parseInt(parts[2], 10), c = parseInt(parts[3], 10);
+      if (a > 31) { return c + ' ' + MONTHS_LONG[b - 1] + ' ' + a; }
+      return a + ' ' + MONTHS_LONG[b - 1] + ' ' + c;
+    }
+
+    return raw; // fallback
+  }
+
+  /* ── CSV PARSER ── */
+  function parseCSV(raw) {
+    raw = raw.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    var rows = [], lines = raw.split('\n');
+    for (var li = 0; li < lines.length; li++) {
+      var line = lines[li];
+      if (!line.trim()) continue;
+      var cells = [], cur = '', inQ = false;
+      for (var i = 0; i < line.length; i++) {
+        var ch = line[i];
+        if (ch === '"' && !inQ) { inQ = true; continue; }
+        if (ch === '"' && inQ && line[i + 1] === '"') { cur += '"'; i++; continue; }
+        if (ch === '"' && inQ) { inQ = false; continue; }
+        if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; continue; }
+        cur += ch;
+      }
+      cells.push(cur.trim());
+      rows.push(cells);
+    }
+    return rows;
+  }
+
+  function parseTSV(raw) {
+    raw = raw.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    return raw.split('\n').filter(function (l) { return l.trim(); })
+      .map(function (l) { return l.split('\t').map(function (c) { return c.trim(); }); });
+  }
+
+  /* ── INGEST ── */
+  function ingest(raw) {
+    var parsed;
+    var firstLine = raw.split('\n')[0] || '';
+    parsed = (firstLine.split('\t').length > firstLine.split(',').length) ? parseTSV(raw) : parseCSV(raw);
+
+    if (!parsed.length) { setStatus('ไม่พบข้อมูล', 's-err'); return; }
+
+    var first = parsed[0].join('').toLowerCase();
+    var isHeader = first.indexOf('คนถาม') >= 0 || first.indexOf('หัวข้อ') >= 0 ||
+                   first.indexOf('วันที่') >= 0 || first.indexOf('ตำแหน่ง') >= 0;
+    allRows = (isHeader ? parsed.slice(1) : parsed).filter(function (r) {
+      return r.length >= 2 && r.some(function (x) { return x.trim(); });
+    });
+
+    var prev = allRows.slice(0, 2).map(function (r, i) {
+      return 'แถว' + (i + 1) + ': ' + r.slice(0, 4).map(function (c) { return '"' + c + '"'; }).join(' | ');
+    }).join('<br>');
+
+    setStatus('<b>โหลดสำเร็จ ' + allRows.length + ' กระทู้</b><br><small style="opacity:.8">' + prev + '</small>', 's-ok');
+
+    buildDateDrop();
+    render();
+  }
+
+  /* ── FETCH ── */
+  function fetchUrl(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status >= 200 && xhr.status < 300) callback(null, xhr.responseText);
+      else callback(new Error('HTTP ' + xhr.status));
+    };
+    xhr.onerror = function () { callback(new Error('Network error')); };
+    xhr.send();
+  }
+
+  function loadFromUrl(originalUrl) {
+    var url = originalUrl;
+    if (url.indexOf('/edit') >= 0 || url.indexOf('#gid=') >= 0) {
+      var m1 = url.match(/\/d\/([^\/]+)/);
+      var m2 = url.match(/[#&]gid=(\d+)/);
+      if (m1) url = 'https://docs.google.com/spreadsheets/d/' + m1[1] + '/export?format=csv&gid=' + (m2 ? m2[1] : '0');
+    }
+    var proxies = [
+      url,
+      'https://corsproxy.io/?url=' + encodeURIComponent(url),
+      'https://api.allorigins.win/get?url=' + encodeURIComponent(url)
+    ];
+    var attempt = 0;
+    function tryNext() {
+      if (attempt >= proxies.length) { setStatus('ดึงไม่ได้ — ใช้วิธีวาง CSV ใน ⚙️ ตั้งค่า แทน', 's-err'); return; }
+      var proxyUrl = proxies[attempt]; attempt++;
+      setStatus('กำลังดึงข้อมูล (ช่องทาง ' + attempt + ')...', 's-load');
+      fetchUrl(proxyUrl, function (err, text) {
+        if (err) { tryNext(); return; }
+        if (proxyUrl.indexOf('allorigins') >= 0) {
+          try {
+            var j = JSON.parse(text);
+            text = j.contents || '';
+            if (text.indexOf('data:') === 0) text = atob(text.split(',')[1]);
+          } catch (e) { /* use as-is */ }
+        }
+        ingest(text);
+      });
+    }
+    tryNext();
+  }
+
+  /* ── DATE DROPDOWN ── newest first ── */
+  function buildDateDrop() {
+    var useDateCol = parseInt(document.getElementById('c_date').value, 10) > 0;
+    var sel = document.getElementById('dateSel');
+
+    if (!useDateCol) {
+      allDates = [];
+      sel.innerHTML = '<option value="">-- ทุกวัน --</option>';
+      return;
+    }
+
+    // Collect unique raw date strings
+    var seen = {}, pairs = [];
+    for (var i = 0; i < allRows.length; i++) {
+      var raw = cv(allRows[i], 'c_date');
+      if (raw && !seen[raw]) {
+        seen[raw] = 1;
+        pairs.push({ raw: raw, val: parseDateValue(raw), label: formatDateDisplay(raw) });
+      }
+    }
+
+    // Sort newest → oldest
+    pairs.sort(function (a, b) { return b.val - a.val; });
+    allDates = pairs;
+
+    sel.innerHTML = '<option value="">-- แสดงล่าสุด --</option>' +
+      pairs.map(function (p) {
+        return '<option value="' + p.raw + '">' + p.label + '</option>';
+      }).join('');
+  }
+
+  /* ── COLOR ── */
+  function autoColor(ans) {
+    var t = ans.toLowerCase();
+    if (t.indexOf('เลื่อน') >= 0) return 'hl-y';
+    if (t.indexOf('ตอบชี้แจง') >= 0 || t.indexOf('ตอบเรียบร้อย') >= 0) return 'hl-g';
+    if (t.indexOf('ค้าง') >= 0) return 'hl-r';
+    return '';
+  }
+
+  /* ── THAI NUMERALS ── */
+  var TN = '๐๑๒๓๔๕๖๗๘๙';
+  function thN(n) { return String(n).replace(/\d/g, function (d) { return TN[d]; }); }
+
+  /* ── RENDER ── */
+  function render() {
+    var dropDate = document.getElementById('dateSel').value;   // raw cell value
+    var q        = document.getElementById('search').value.toLowerCase();
+    var useDateCol = parseInt(document.getElementById('c_date').value, 10) > 0;
+
+    // Determine which dates to show
+    var datesToShow = [];
+    if (dropDate) {
+      // User picked a specific date
+      datesToShow = [dropDate];
+    } else if (useDateCol && allDates.length > 0 && !q) {
+      // No filter → show only the LATEST date
+      datesToShow = [allDates[0].raw];
+    }
+    // If searching by keyword → show all dates matching keyword
+
+    var rows = allRows.filter(function (r) {
+      if (datesToShow.length > 0 && useDateCol) {
+        var d = cv(r, 'c_date');
+        if (datesToShow.indexOf(d) < 0) return false;
+      }
+      if (q) {
+        var fields = [cv(r, 'c_topic'), cv(r, 'c_asker'), cv(r, 'c_ask'), cv(r, 'c_answer')];
+        return fields.some(function (v) { return v.toLowerCase().indexOf(q) >= 0; });
+      }
+      return true;
+    });
+
+    var main = document.getElementById('mainEl');
+
+    if (!allRows.length) {
+      main.innerHTML = '<div class="empty"><div class="ico">📋</div><p>เปิด <b>⚙️ ตั้งค่า</b> เพื่อวางข้อมูล</p></div>';
+      return;
+    }
+    if (!rows.length) {
+      main.innerHTML = '<div class="empty"><div class="ico">🔍</div><p>ไม่พบข้อมูลที่ตรงกับเงื่อนไข</p></div>';
+      return;
+    }
+
+    // Group by date — order newest first
+    var grouped = {}, order = [];
+    for (var i = 0; i < rows.length; i++) {
+      var d = useDateCol ? cv(rows[i], 'c_date') : '__all__';
+      if (!grouped[d]) { grouped[d] = []; order.push(d); }
+      grouped[d].push(rows[i]);
+    }
+
+    // Sort groups newest → oldest using parseDateValue
+    order.sort(function (a, b) { return parseDateValue(b) - parseDateValue(a); });
+
+    main.innerHTML = order.map(function (d) { return buildDoc(d, grouped[d]); }).join('');
+  }
+
+  /* ── BUILD DOC ── */
+  function buildDoc(rawDate, rows) {
+    var displayDate = rawDate === '__all__' ? '' : formatDateDisplay(rawDate);
+    var agenda = '';
+    for (var i = 0; i < rows.length; i++) { agenda = cv(rows[i], 'c_agenda'); if (agenda) break; }
+    var items = rows.map(function (r, i) { return buildItem(r, i + 1); }).join('');
+    return '<div class="doc">' +
+      '<div class="doc-head"><h2>กระทู้ถามในที่ประชุมสภา</h2>' +
+      (displayDate ? '<span class="doc-date">' + displayDate + '</span>' : '') +
+      (agenda ? '<div class="doc-session">' + agenda + '</div>' : '') +
+      '</div><div class="doc-body">' +
+      '<div class="sec-label">กระทู้ถามด้วยวาจา</div>' + items +
+      '</div><div class="doc-foot">' +
+      '<span style="font-weight:700">สัญลักษณ์:</span>' +
+      '<span class="leg"><span class="leg-dot" style="background:#FFD700"></span>ขอเลื่อนการตอบ</span>' +
+      '<span class="leg"><span class="leg-dot" style="background:#22CC55"></span>ตอบชี้แจงแล้ว</span>' +
+      '<span class="leg"><span class="leg-dot" style="background:#EE3333"></span>ค้างตอบ</span>' +
+      '</div></div>';
+  }
+
+  function buildItem(r, n) {
+    var topic  = cv(r, 'c_topic');
+    var asker  = cv(r, 'c_asker');
+    var pos    = cv(r, 'c_pos');
+    var ask    = cv(r, 'c_ask');
+    var answer = cv(r, 'c_answer');
+    var cls    = autoColor(answer);
+    var al     = [asker, pos].filter(Boolean).join(' ');
+    var ansEl  = answer ? (cls ? '<span class="badge ' + cls + '">' + answer + '</span>' : answer) : '<span style="color:#aaa">—</span>';
+    return '<div class="item">' +
+      '<div class="line"><span class="num">' + thN(n) + '. กระทู้ถาม เรื่อง</span> ' + topic + '</div>' +
+      (al  ? '<div class="line">ผู้ถาม ' + al  + '</div>' : '') +
+      (ask ? '<div class="line">ถาม '    + ask + '</div>' : '') +
+      '<div class="line">ผู้ตอบ ' + ansEl + '</div>' +
+      '</div>';
+  }
+
+  /* ── RAW VIEWER ── */
+  function showRaw() {
+    if (!allRows.length) { alert('ยังไม่มีข้อมูล'); return; }
+    var maxC = 0;
+    for (var i = 0; i < Math.min(allRows.length, 5); i++) maxC = Math.max(maxC, allRows[i].length);
+    var th = '<th style="padding:6px 10px">แถว</th>';
+    for (var c = 0; c < maxC; c++) th += '<th style="padding:6px 10px">Col ' + (c + 1) + ' (' + String.fromCharCode(65 + c) + ')</th>';
+    var tds = allRows.slice(0, 15).map(function (r, i) {
+      var cells = '<td style="padding:5px 9px;font-weight:700;color:#1a3a5c">' + (i + 1) + '</td>';
+      for (var j = 0; j < maxC; j++) {
+        var v = String(r[j] || '');
+        cells += '<td style="padding:5px 9px">' + (v.length > 25 ? v.substring(0, 25) + '…' : v) + '</td>';
+      }
+      return '<tr style="background:' + (i % 2 ? '#f8f8f8' : '#fff') + '">' + cells + '</tr>';
+    }).join('');
+
+    var bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = '<div class="modal-box">' +
+      '<div class="modal-head"><b>🔎 ข้อมูลดิบ — ตรวจสอบ Column</b>' +
+      '<button id="closeRaw" class="btn btn-gray">✕ ปิด</button></div>' +
+      '<p style="font-size:12px;color:#666;margin-bottom:10px">ดูตัวเลข Col แล้วปรับใน ⚙️ ตั้งค่า</p>' +
+      '<div style="overflow-x:auto"><table class="tbl"><thead><tr style="background:#1a3a5c;color:#fff">' + th +
+      '</tr></thead><tbody>' + tds + '</tbody></table></div>' +
+      (allRows.length > 15 ? '<p style="font-size:12px;color:#999;margin-top:8px">แสดง 15 แถวแรกจาก ' + allRows.length + '</p>' : '') +
+      '</div>';
+    document.body.appendChild(bg);
+    document.getElementById('closeRaw').addEventListener('click', function () { bg.remove(); });
+    bg.addEventListener('click', function (e) { if (e.target === bg) bg.remove(); });
+  }
+
+  /* ── INIT ── */
+  document.addEventListener('DOMContentLoaded', function () {
+
+    // แสดงวันนี้ที่มุมซ้าย
+    document.getElementById('todayBadge').textContent = todayThai();
+
+    // โหลดอัตโนมัติ: ใช้ localStorage ถ้ามี, ไม่มีให้ใช้ URL default ในไฟล์
+    try {
+      var savedUrl = localStorage.getItem('krathu_url');
+      var defaultUrl = document.getElementById('sheetUrl').value.trim();
+      var urlToLoad = savedUrl || defaultUrl;
+      if (urlToLoad && urlToLoad.indexOf('วาง_URL') < 0) {
+        if (savedUrl) document.getElementById('sheetUrl').value = savedUrl;
+        setStatus('🔗 กำลังโหลดข้อมูลอัตโนมัติ...', 's-load');
+        loadFromUrl(urlToLoad);
+      }
+    } catch(e) {}
+
+    // Top bar
+    document.getElementById('btnLoad').addEventListener('click', function () {
+      var url = document.getElementById('sheetUrl').value.trim();
+      if (!url) { setStatus('กรุณากรอก URL ใน ⚙️ ตั้งค่าก่อน', 's-err'); document.getElementById('setupEl').style.display = 'block'; return; }
+      try { localStorage.setItem('krathu_url', url); } catch(e) {}
+      loadFromUrl(url);
+    });
+    document.getElementById('btnRaw').addEventListener('click', showRaw);
+    document.getElementById('btnPrint').addEventListener('click', function () { window.print(); });
+
+    document.getElementById('btnSetup').addEventListener('click', function () {
+      var el = document.getElementById('setupEl');
+      var open = el.style.display !== 'block';
+      el.style.display = open ? 'block' : 'none';
+      document.getElementById('arr').textContent = open ? '▲' : '▼';
+    });
+    document.getElementById('setupHdr').addEventListener('click', function () {
+      document.getElementById('btnSetup').click();
+    });
+
+    // Setup panel
+    document.getElementById('btnUsePaste').addEventListener('click', function () {
+      var raw = document.getElementById('csvPaste').value.trim();
+      if (!raw) { setStatus('ยังไม่ได้วางข้อมูล', 's-err'); return; }
+      ingest(raw);
+    });
+    document.getElementById('btnClearPaste').addEventListener('click', function () {
+      document.getElementById('csvPaste').value = '';
+    });
+    document.getElementById('btnSample').addEventListener('click', function () {
+      ingest([
+        'วันที่\tคนถาม\tหัวข้อ\tตำแหน่ง\tถาม\tบรรจุระเบียบวาระ\tสถานะ\tคำตอบ',
+        '17 มี.ค. 2568\tนาย ก (ประชาชน/ชลบุรี)\tติดตามความก้าวหน้าการเพิกถอนโฉนดที่ดิน\tสว.\tนายกรัฐมนตรี\tชุดที่ ๒๖ ปีที่ ๓ ครั้งที่ ๒๘\tมาตอบ\tนาย เอ ขอเลื่อนการตอบกระทู้ถาม',
+        '17 มี.ค. 2568\tสสเฟิสเพื่อไทย\tการแก้ไขปัญหาที่ดินรกร้างในความดูแลรัฐ\tสว.\tเจได\tชุดที่ ๒๖ ปีที่ ๓ ครั้งที่ ๒๘\tมาตอบ\tออิ ตอบชี้แจง',
+        '16 มี.ค. 2568\tนางสาวศศินันท์ ธรรมนิฐนันท์\tประชาชนอุทิศที่ดินให้รัฐต้องเสียค่ารังวัด\tสว.\tมหาดไทย\tชุดที่ ๒๖ ปีที่ ๓ ครั้งที่ ๒๗\tมาตอบ\tเลื่อน',
+        '15 มี.ค. 2568\tนายรวี เล็กอยัย\tแนวทางการดูแลประชากรผู้สูงอายุ\tสว.\tสาธารณสุข\tชุดที่ ๒๖ ปีที่ ๓ ครั้งที่ ๒๖\tมาตอบ\tเลื่อน'
+      ].join('\n'));
+    });
+    document.getElementById('btnForgetUrl').addEventListener('click', function () {
+      try { localStorage.removeItem('krathu_url'); } catch(e) {}
+      document.getElementById('sheetUrl').value = '';
+      setStatus('🗑️ ลบ URL ที่บันทึกไว้แล้ว — กรอก URL ใหม่แล้วกด "เชื่อมต่อ & จำไว้"', 's-ok');
+    });
+
+    document.getElementById('btnLoadUrl').addEventListener('click', function () {
+      var url = document.getElementById('sheetUrl').value.trim();
+      if (!url) { setStatus('กรุณากรอก URL ก่อน', 's-err'); return; }
+      try { localStorage.setItem('krathu_url', url); } catch(e) {}
+      loadFromUrl(url);
+    });
+
+    // Filters
+    document.getElementById('search').addEventListener('input', render);
+    document.getElementById('dateSel').addEventListener('change', render);
+  });
+
+})();
+</script>
+</body>
+</html>
