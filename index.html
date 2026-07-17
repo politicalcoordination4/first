@@ -23,6 +23,12 @@ body{font-family:'Sarabun',sans-serif;background:#f0ede8;color:#111;min-height:1
 .fg input,.fg select{font-family:'Sarabun',sans-serif;font-size:14px;padding:7px 10px;border:1.5px solid #d4cfc7;border-radius:6px;background:#fafafa;color:#111;outline:none}
 .fg input:focus,.fg select:focus{border-color:#1a3a5c;background:#fff}
 .today-badge{background:#f0f4f8;border:1.5px solid #b0bec5;border-radius:6px;padding:7px 14px;font-size:14px;font-weight:700;color:#37474f;white-space:nowrap}
+.range-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.range-row select{font-family:'Sarabun',sans-serif;font-size:14px;padding:7px 10px;border:1.5px solid #d4cfc7;border-radius:6px;background:#fafafa;color:#111;outline:none;min-width:155px}
+.range-row select:focus{border-color:#1a3a5c;background:#fff}
+.range-row span{font-size:13px;color:#555;white-space:nowrap}
+.fg select.range-active{border-color:#c9a227;background:#fffbe8}
+.fg-dim select,.fg-dim label{opacity:.45;pointer-events:none}
 .btn{font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:background .15s}
 .btn-blue{background:#1a3a5c;color:#fff}.btn-blue:hover{background:#0f2640}
 .btn-gray{background:#eee;color:#1a3a5c;border:1.5px solid #d4cfc7}.btn-gray:hover{background:#ddd}
@@ -134,10 +140,21 @@ body{font-family:'Sarabun',sans-serif;background:#f0ede8;color:#111;min-height:1
 
 <div class="topbar">
 
-  <div class="fg">
+  <div class="fg" id="singleDateGroup">
     <label>📋 เลือกวันที่ต้องการดู</label>
     <select id="dateSel" style="min-width:180px"></select>
   </div>
+
+  <div class="fg" id="rangeGroup">
+    <label>📅 แสดงช่วงวันที่</label>
+    <div class="range-row">
+      <select id="dateFrom"><option value="">— จากวันที่ —</option></select>
+      <span>ถึง</span>
+      <select id="dateTo"><option value="">— ถึงวันที่ —</option></select>
+      <button class="btn btn-gray" id="btnClearRange" title="ล้างช่วงวันที่" style="padding:7px 10px;font-size:13px">✕ ล้าง</button>
+    </div>
+  </div>
+
   <div class="fg">
     <label>🏛️ ประเภทสภา</label>
     <select id="typeSel" style="min-width:130px">
@@ -436,6 +453,14 @@ function buildDateDrop(){
   allDates=pairs;
   sel.innerHTML='<option value="">-- แสดงล่าสุด --</option>'+
     pairs.map(function(p){return '<option value="'+p.raw+'">'+p.label+'</option>';}).join('');
+  // populate range selects (จากวันเก่าสุด → ใหม่สุด ในช่อง From, ใหม่สุด → เก่าสุด ในช่อง To)
+  var asc=[].concat(pairs).reverse(); // เก่า→ใหม่ สำหรับ dateFrom
+  var fromHtml='<option value="">— จากวันที่ —</option>'+
+    asc.map(function(p){return '<option value="'+p.raw+'">'+p.label+'</option>';}).join('');
+  var toHtml='<option value="">— ถึงวันที่ —</option>'+
+    pairs.map(function(p){return '<option value="'+p.raw+'">'+p.label+'</option>';}).join('');
+  document.getElementById('dateFrom').innerHTML=fromHtml;
+  document.getElementById('dateTo').innerHTML=toHtml;
   buildCatDrop();
 }
 
@@ -443,9 +468,18 @@ function buildCatDrop(){
   var useCat=parseInt(document.getElementById('c_category').value,10)>0;
   var useDateCol=parseInt(document.getElementById('c_date').value,10)>0;
   var dropDate=document.getElementById('dateSel').value;
+  var fromVal=document.getElementById('dateFrom').value;
+  var toVal=document.getElementById('dateTo').value;
+  var useRange=fromVal&&toVal;
   var sel=document.getElementById('catSel');
   if(!useCat){sel.innerHTML='<option value="">-- ทุกประเภท --</option>';return;}
   var dateRows=allRows.filter(function(r){
+    if(useRange&&useDateCol){
+      var fromNum=parseDateVal(fromVal),toNum=parseDateVal(toVal);
+      if(fromNum>toNum){var t=fromNum;fromNum=toNum;toNum=t;}
+      var dv=parseDateVal(cv(r,'c_date'));
+      return dv>=fromNum&&dv<=toNum;
+    }
     if(!dropDate){return useDateCol&&allDates.length>0?cv(r,'c_date')===allDates[0].raw:true;}
     return useDateCol?cv(r,'c_date')===dropDate:true;
   });
@@ -508,15 +542,26 @@ function render(){
   var q=document.getElementById('search').value.toLowerCase();
   var useDateCol=parseInt(document.getElementById('c_date').value,10)>0;
   var useCatCol =parseInt(document.getElementById('c_category').value,10)>0;
+  var fromVal=document.getElementById('dateFrom').value;
+  var toVal=document.getElementById('dateTo').value;
+  var useRange=fromVal&&toVal&&useDateCol;
+  var fromNum=useRange?parseDateVal(fromVal):0;
+  var toNum=useRange?parseDateVal(toVal):0;
+  if(useRange&&fromNum>toNum){var tmpN=fromNum;fromNum=toNum;toNum=tmpN;}
 
-  // หา "วันล่าสุด" เฉพาะของ type ที่เลือก ไม่ใช่ global
+  // ── ไฮไลต์ range / dim single ──
+  document.getElementById('dateFrom').className=useRange?'range-active':'';
+  document.getElementById('dateTo').className=useRange?'range-active':'';
+  document.getElementById('singleDateGroup').className='fg'+(useRange?' fg-dim':'');
+
+  // หา "วันล่าสุด" เฉพาะของ type ที่เลือก (ใช้เฉพาะเมื่อไม่มี range)
   var candidateRows = dropType ? allRows.filter(function(r){
     var src=r.__src||'';
     return (src&&src.indexOf(dropType.replace('.',''))>=0);
   }) : allRows;
 
   var latestForType = '';
-  if(!dropDate && useDateCol && candidateRows.length>0 && !q){
+  if(!useRange&&!dropDate && useDateCol && candidateRows.length>0 && !q){
     var bestVal=0;
     for(var ti=0;ti<candidateRows.length;ti++){
       var dRaw=cv(candidateRows[ti],'c_date');
@@ -526,9 +571,15 @@ function render(){
   }
 
   var datesToShow=[];
-  if(dropDate) datesToShow=[dropDate];
-  else if(latestForType) datesToShow=[latestForType];
-  else if(useDateCol&&allDates.length>0&&!q) datesToShow=[allDates[0].raw];
+  if(useRange){
+    datesToShow=allDates.filter(function(d){return d.val>=fromNum&&d.val<=toNum;}).map(function(d){return d.raw;});
+  } else if(dropDate){
+    datesToShow=[dropDate];
+  } else if(latestForType){
+    datesToShow=[latestForType];
+  } else if(useDateCol&&allDates.length>0&&!q){
+    datesToShow=[allDates[0].raw];
+  }
 
   var rows=allRows.filter(function(r){
     if(datesToShow.length>0&&useDateCol){if(datesToShow.indexOf(cv(r,'c_date'))<0)return false;}
@@ -906,6 +957,28 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('typeSel').addEventListener('change',render);
   document.getElementById('catSel').addEventListener('change',render);
   document.getElementById('dateSel').addEventListener('change',function(){
+    buildCatDrop();
+    document.getElementById('catSel').value='';
+    render();
+  });
+
+  // ── Date range listeners ──
+  document.getElementById('dateFrom').addEventListener('change',function(){
+    // เมื่อเลือก range → ล้าง single date selector
+    if(this.value) document.getElementById('dateSel').value='';
+    buildCatDrop();
+    document.getElementById('catSel').value='';
+    render();
+  });
+  document.getElementById('dateTo').addEventListener('change',function(){
+    if(this.value) document.getElementById('dateSel').value='';
+    buildCatDrop();
+    document.getElementById('catSel').value='';
+    render();
+  });
+  document.getElementById('btnClearRange').addEventListener('click',function(){
+    document.getElementById('dateFrom').value='';
+    document.getElementById('dateTo').value='';
     buildCatDrop();
     document.getElementById('catSel').value='';
     render();
