@@ -827,7 +827,7 @@ function renderStats(){
     {label:'ตอบแล้ว',value:cAns,color:'#2e7d32'},
     {label:'ยังไม่ตอบ',value:unanswered,color:'#c62828'}
   ], toThai(ansPct)+'%', 'อัตราตอบ');
-  var card1='<div class="stat-card"><h3>🥧 ภาพรวมการตอบ</h3>'+
+  var card1='<div class="stat-card"><h3>🥧 สถิติการตอบ</h3>'+
     '<div class="donut-wrap">'+donutMain+
       '<div class="donut-legend">'+
         '<div class="lg"><span class="dot" style="background:#2e7d32"></span>ตอบแล้ว <b>'+toThai(cAns)+'</b> <span class="pct">('+toThai(effTotal>0?Math.round(cAns/effTotal*100):0)+'%)</span></div>'+
@@ -850,7 +850,7 @@ function renderStats(){
     if(val<=0)return '';
     return '<div class="lg"><span class="dot" style="background:'+color+'"></span>'+label+' <b>'+toThai(val)+'</b></div>';
   }
-  var card2='<div class="stat-card"><h3>🎯 แยกตามสถานะ</h3>'+
+  var card2='<div class="stat-card"><h3>🎯 จำนวนการตอบ</h3>'+
     '<div class="donut-wrap">'+donutDetail+
       '<div class="donut-legend">'+
         legendRow('#2e7d32','ตอบชี้แจงแล้ว',cAns)+
@@ -869,7 +869,7 @@ function renderStats(){
   });
   // มากสุด = เรียงตาม % ตอบ สูง→ต่ำ (tie: total มากก่อน)
   var topResp=respArr.slice().sort(function(a,b){return b.pct-a.pct || b.total-a.total;}).slice(0,10);
-  var card3='<div class="stat-card" style="grid-column:1/-1"><h3>🏆 อันดับผู้ถูกมอบหมาย — ตอบมากสุด</h3>'+
+  var card3='<div class="stat-card" style="grid-column:1/-1"><h3>🏆 อันดับผู้ตอบกระทู้มากสุด</h3>'+
     '<div class="rank-list">'+
     (topResp.length?topResp.map(function(r,i){return rankRow(i,r.name,r.ans,r.total,'#2e7d32');}).join(''):'<div class="rank-empty">ไม่มีข้อมูลผู้ถูกมอบหมาย (คอลัมน์ H)</div>')+
     '</div>'+
@@ -879,7 +879,7 @@ function renderStats(){
   // ═══ การ์ด 4: อันดับผู้ถูกมอบหมาย (ตอบน้อยสุด / ค้างมากสุด) ═══
   var bottomResp=respArr.slice().filter(function(r){return r.total>0;})
     .sort(function(a,b){return a.pct-b.pct || b.total-a.total;}).slice(0,10);
-  var card4='<div class="stat-card" style="grid-column:1/-1"><h3>⚠️ อันดับผู้ถูกมอบหมาย — ค้าง/ไม่ตอบมากสุด</h3>'+
+  var card4='<div class="stat-card" style="grid-column:1/-1"><h3>⚠️ อันดับผู้ค้าง/ไม่ตอบกระทู้มากสุด</h3>'+
     '<div class="rank-list">'+
     (bottomResp.length?bottomResp.map(function(r,i){return rankRow(i,r.name,r.ans,r.total,'#c62828');}).join(''):'<div class="rank-empty">ไม่มีข้อมูล</div>')+
     '</div>'+
@@ -905,7 +905,7 @@ function renderStats(){
       '<div class="rk-val">ถูกถาม <b>'+toThai(m.total)+'</b><br><span style="color:#c62828">ค้าง '+toThai(m.unans)+'</span></div>'+
     '</div>';
   }).join('');
-  var card5='<div class="stat-card" style="grid-column:1/-1"><h3>🏛️ อันดับกระทรวง — ถูกถามมากสุด</h3>'+
+  var card5='<div class="stat-card" style="grid-column:1/-1"><h3>🏛️ อันดับรัฐมนตรีถูกถามมากสุด</h3>'+
     '<div class="rank-list">'+
     (topMin.length?minRows:'<div class="rank-empty">ไม่มีข้อมูลกระทรวง (คอลัมน์ F)</div>')+
     '</div>'+
